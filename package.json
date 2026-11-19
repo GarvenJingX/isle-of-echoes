@@ -1,0 +1,19 @@
+{
+  "name": "isle-of-echoes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isle of Echoes — 只在本机运行的私人音频收藏小岛",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}
