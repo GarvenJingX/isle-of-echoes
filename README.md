@@ -306,7 +306,7 @@ m4a 通常封装 AAC；Edge / Chrome / Safari 支持较好，部分 Firefox 版�
 1. 在 GitHub 创建公开仓库并推送代码；
 2. 在 Render 新建 Web Service，连接该仓库；
 3. Build command：`npm install`，Start command：`npm start`；
-4. 平台会自动注入 `PORT` 与 `HOST=0.0.0.0`，服务代码已支持，无需额外配置；
+4. 平台会注入 `PORT` 与 `RENDER=true`（注意：**不会**注入 `HOST`）；服务代码检测到 `RENDER=true` 时会自动改绑 `0.0.0.0` 以接收外部请求，无需额外配置；
 5. 如需持久保存上传的文件，请为服务挂载持久磁盘（付费），并让 `audio/`、`data/` 指向它。
 
 ---

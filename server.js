@@ -23,8 +23,9 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const METADATA_FILE = path.join(DATA_DIR, 'tracks.json');
 
-// 本机启动默认只监听 127.0.0.1；部署到云端时由平台注入 HOST=0.0.0.0 对外服务
-const HOST = process.env.HOST || '127.0.0.1';
+// 本机启动默认只监听 127.0.0.1；Render 云端要求绑定 0.0.0.0（平台注入 RENDER=true，并不会注入 HOST）
+const ON_RENDER = process.env.RENDER === 'true';
+const HOST = process.env.HOST || (ON_RENDER ? '0.0.0.0' : '127.0.0.1');
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_FILES_PER_REQUEST = 20;
 
