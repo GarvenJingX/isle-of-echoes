@@ -2436,7 +2436,7 @@ main,
   position: absolute;
   right: 0;
   bottom: calc(100% + 12px);
-  z-index: 80;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   width: 372px;
@@ -2788,6 +2788,349 @@ main,
 .modal-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* ------------------------------ now playing ------------------------------ */
+
+/* 底部唱片改为可点按钮：尺寸与原唱片一致，不改变布局 */
+.player-disc-btn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.now-playing {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.now-playing[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  animation: modal-in 0.32s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.now-playing::backdrop {
+  background: rgba(33, 27, 21, 0.42);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+[data-theme="dark"] .now-playing::backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+/* 背景 = 唱片标签色的柔光叠在页面底色上；--np-glow 由 player.js 注入 */
+.np-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 50% 32%, var(--np-glow, transparent), transparent 70%),
+    var(--bg);
+  opacity: 0.5;
+}
+
+[data-theme="dark"] .np-bg {
+  opacity: 0.78;
+}
+
+.np-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 26px 0;
+}
+
+.np-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--muted);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.np-close:hover {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.np-close .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.np-heading {
+  min-width: 0;
+}
+
+.np-kicker {
+  margin-bottom: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.np-title {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.2vw, 44px);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-sub {
+  margin-top: 6px;
+  overflow: hidden;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 12px 0;
+}
+
+.np-disc-btn {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.np-disc-btn:hover {
+  transform: scale(1.02);
+}
+
+/* 大唱片：纹理与底部 .player-disc 同一套写法，播放转、暂停停在原角度 */
+.np-disc {
+  position: relative;
+  width: min(46vh, 420px);
+  height: min(46vh, 420px);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 31% 27%, rgba(255, 255, 255, 0.16), transparent 34%),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      #34302c 0 0.9px,
+      #24211e 0.9px 1.9px,
+      #2e2a27 1.9px 2.8px
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 12px rgba(0, 0, 0, 0.5),
+    0 26px 48px -26px rgba(0, 0, 0, 0.6);
+  animation: spin 8s linear infinite;
+  animation-play-state: paused;
+}
+
+.now-playing.is-playing .np-disc {
+  animation-play-state: running;
+}
+
+.np-disc::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.1) 38deg,
+    transparent 82deg,
+    transparent 196deg,
+    rgba(255, 255, 255, 0.05) 230deg,
+    transparent 272deg
+  );
+}
+
+.np-disc-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: #b9cfbf;
+  color: #3b352d;
+  font-family: var(--font-display);
+  font-size: min(6.4vh, 40px);
+  font-weight: 500;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.np-disc-label.tone-a {
+  background: #b9cfbf;
+}
+
+.np-disc-label.tone-b {
+  background: #d9b7aa;
+}
+
+.np-disc-label.tone-c {
+  background: #d8c4a3;
+}
+
+.np-disc-label.tone-d {
+  background: #b8c6d0;
+}
+
+.np-disc-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--vinyl-edge);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transform: translate(-50%, -50%);
+}
+
+.np-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0 26px 30px;
+}
+
+.np-meta {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(760px, 100%);
+}
+
+.np-progress .time {
+  min-width: 44px;
+  font-size: 11.5px;
+}
+
+.np-progress .seek-range {
+  height: 22px;
+}
+
+.np-progress .seek-range::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  margin-top: -3.5px;
+}
+
+.np-progress .seek-range::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+}
+
+.np-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.np-controls .player-btn {
+  width: 46px;
+  height: 46px;
+}
+
+.np-controls .player-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.np-controls .player-btn--main {
+  width: 60px;
+  height: 60px;
+  margin: 0;
+}
+
+.np-controls .player-btn--main .icon {
+  width: 23px;
+  height: 23px;
+}
+
+/* 小屏：标题两行截断、底部收紧并避让安全区 */
+@media (max-width: 760px) {
+  .np-top {
+    padding: 16px 18px 0;
+  }
+
+  .np-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: clamp(22px, 6vw, 30px);
+    line-height: 1.25;
+    text-overflow: initial;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .np-disc {
+    width: min(62vw, 46vh, 420px);
+    height: min(62vw, 46vh, 420px);
+  }
+
+  .np-bottom {
+    gap: 12px;
+    padding: 0 18px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .np-progress {
+    gap: 10px;
+  }
+
+  .np-controls {
+    gap: 16px;
+  }
 }
 
 /* -------------------------------- keyframes ------------------------------ */
@@ -3354,7 +3697,8 @@ main,
   }
 
   .vinyl,
-  .player-disc {
+  .player-disc,
+  .np-disc {
     animation: none !important;
   }
 }

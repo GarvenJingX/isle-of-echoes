@@ -799,8 +799,9 @@ function bindSearch() {
   els.searchClear.addEventListener('click', () => clearSearch({ focus: true }));
 
   document.addEventListener('keydown', (event) => {
-    // 弹窗打开时不要触发空格播放、/ 搜索等页面快捷键
-    if (document.querySelector('dialog[open]')) return;
+    // 弹窗打开时不要触发空格播放、/ 搜索等页面快捷键；
+    // 全屏播放页（data-allow-shortcuts）例外，页面快捷键在其中继续可用
+    if (document.querySelector('dialog[open]:not([data-allow-shortcuts])')) return;
 
     const target = event.target;
     const typing =

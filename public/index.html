@@ -400,11 +400,13 @@
     <div class="player" id="player" data-empty="true">
       <div class="player-inner shell">
         <div class="player-track">
-          <div class="player-disc" id="player-disc" aria-hidden="true">
-            <span class="player-disc-grooves"></span>
-            <span class="player-disc-label"><span id="player-initial">◦</span></span>
-            <span class="player-disc-hole"></span>
-          </div>
+          <button class="player-disc-btn" id="player-disc-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="now-playing-dialog" aria-label="展开正在播放" title="展开播放页">
+            <div class="player-disc" id="player-disc" aria-hidden="true">
+              <span class="player-disc-grooves"></span>
+              <span class="player-disc-label"><span id="player-initial">◦</span></span>
+              <span class="player-disc-hole"></span>
+            </div>
+          </button>
           <div class="player-track-text">
             <p class="player-title" id="player-title">还没有播放任何声音</p>
             <p class="player-sub" id="player-sub">从卡片里挑一首，或先放一段声音上岛</p>
@@ -667,6 +669,48 @@
         <path d="M10 10.5v5.6M14 10.5v5.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
       </symbol>
     </svg>
+
+    <!-- 「正在播放」全屏详情页：点左下角唱片展开 -->
+    <dialog class="now-playing" id="now-playing-dialog" aria-labelledby="np-title" data-allow-shortcuts>
+      <div class="np-bg" aria-hidden="true"></div>
+      <header class="np-top">
+        <button class="np-close" id="np-close" type="button" aria-label="收起播放页" title="收起播放页">
+          <svg class="icon" aria-hidden="true"><use href="#i-chevron"></use></svg>
+        </button>
+        <div class="np-heading">
+          <p class="np-kicker">now playing</p>
+          <h2 class="np-title" id="np-title"></h2>
+          <p class="np-sub" id="np-sub"></p>
+        </div>
+      </header>
+      <div class="np-stage">
+        <button class="np-disc-btn" id="np-disc-btn" type="button" aria-label="播放 / 暂停" title="播放 / 暂停">
+          <div class="np-disc" id="np-disc" aria-hidden="true">
+            <span class="np-disc-label" id="np-disc-label">◦</span>
+            <span class="np-disc-hole"></span>
+          </div>
+        </button>
+      </div>
+      <footer class="np-bottom">
+        <p class="np-meta" id="np-meta"></p>
+        <div class="np-progress">
+          <span class="time" id="np-time-current">0:00</span>
+          <input class="seek-range" id="np-seek" type="range" min="0" max="1000" value="0" aria-label="播放进度" style="--seek: 0%">
+          <span class="time" id="np-time-total">0:00</span>
+        </div>
+        <div class="np-controls">
+          <button class="player-btn" id="np-prev" type="button" aria-label="上一首" title="上一首">
+            <svg class="icon" aria-hidden="true"><use href="#i-prev"></use></svg>
+          </button>
+          <button class="player-btn player-btn--main" id="np-play" type="button" aria-label="播放" title="播放 / 暂停">
+            <svg class="icon" aria-hidden="true"><use id="np-play-icon" href="#i-play"></use></svg>
+          </button>
+          <button class="player-btn" id="np-next" type="button" aria-label="下一首" title="下一首">
+            <svg class="icon" aria-hidden="true"><use href="#i-next"></use></svg>
+          </button>
+        </div>
+      </footer>
+    </dialog>
 
     <script type="module" src="/assets/js/app.js"></script>
   </body>

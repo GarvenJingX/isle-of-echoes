@@ -122,6 +122,28 @@ export class Player {
     this._waveInitFailed = false;
     this._waveReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+    // 「正在播放」全屏详情页；元素缺失时相关功能整体静默降级
+    this.np = {
+      dialog: document.getElementById('now-playing-dialog'),
+      trigger: document.getElementById('player-disc-btn'),
+      close: document.getElementById('np-close'),
+      title: document.getElementById('np-title'),
+      sub: document.getElementById('np-sub'),
+      discPlay: document.getElementById('np-disc-btn'),
+      label: document.getElementById('np-disc-label'),
+      meta: document.getElementById('np-meta'),
+      seek: document.getElementById('np-seek'),
+      timeCurrent: document.getElementById('np-time-current'),
+      timeTotal: document.getElementById('np-time-total'),
+      prev: document.getElementById('np-prev'),
+      play: document.getElementById('np-play'),
+      playIcon: document.getElementById('np-play-icon'),
+      next: document.getElementById('np-next'),
+    };
+    this.npAvailable = Boolean(this.np.dialog && this.np.trigger);
+    // 拖动来源：主播放器进度条或全屏页进度条
+    this._seekSource = 'main';
+
     this.bindEvents();
     this.applyPreferences();
     this.renderAll();
@@ -400,15 +422,17 @@ export class Player {
 
   /* ------------------------------- seeking ------------------------------- */
 
-  beginSeek() {
+  beginSeek(source = 'main') {
     this.isSeeking = true;
+    this._seekSource = source;
   }
 
   /** 拖动结束后才真正 seek，避免与 timeupdate 的进度回写互相打架 */
   endSeek() {
     if (!this.isSeeking) return;
     this.isSeeking = false;
-    this.seekToRatio(Number(this.el.seek.value) / 1000);
+    const source = this._seekSource === 'np' && this.np.seek ? this.np : this.el;
+    this.seekToRatio(Number(source.seek.value) / 1000);
   }
 
   seekToRatio(ratio) {
@@ -483,6 +507,26 @@ export class Player {
       this.setSpeedMenu(false);
       this.renderQueue();
     }
+  }
+
+  /* ----------------------------- now playing ----------------------------- */
+
+  openNowPlaying() {
+    const np = this.np;
+    if (!this.npAvailable || typeof np.dialog.showModal !== 'function') return;
+    np.trigger.setAttribute('aria-expanded', 'true');
+    this.renderNowPlaying();
+    np.dialog.showModal();
+    // 把焦点交给大唱片：空格键落在它身上即播放/暂停，关闭后原生焦点仍归还唱片按钮
+    if (np.discPlay) np.discPlay.focus();
+  }
+
+  closeNowPlaying() {
+    const np = this.np;
+    if (!this.npAvailable || !np.dialog.open) return;
+    np.trigger.setAttribute('aria-expanded', 'false');
+    np.dialog.close();
+    // 焦点由 dialog 原生归还给唱片按钮
   }
 
   /* -------------------------------- events ------------------------------- */
@@ -571,6 +615,46 @@ export class Player {
         this.el.speedToggle.focus();
       }
     });
+
+    if (this.npAvailable) this.bindNowPlayingEvents();
+  }
+
+  /** 「正在播放」全屏页的事件绑定：只在元素齐全时调用 */
+  bindNowPlayingEvents() {
+    const np = this.np;
+
+    np.trigger.addEventListener('click', () => this.openNowPlaying());
+    np.close.addEventListener('click', () => this.closeNowPlaying());
+
+    np.dialog.addEventListener('click', (event) => {
+      // 点遮罩关闭：只有落在 dialog 自身（而非内容）上的点击才算
+      if (event.target === np.dialog) this.closeNowPlaying();
+    });
+    np.dialog.addEventListener('close', () => {
+      // Esc 等原生关闭途径的兜底：同步触发按钮的展开态
+      np.trigger.setAttribute('aria-expanded', 'false');
+    });
+
+    np.discPlay.addEventListener('click', () => this.toggle());
+    np.play.addEventListener('click', () => this.toggle());
+    np.prev.addEventListener('click', () => this.previous());
+    np.next.addEventListener('click', () => this.next());
+
+    // 与主播放器同一套 isSeeking 标志：拖动中只更新 UI，松手才 seek
+    np.seek.addEventListener('pointerdown', () => this.beginSeek('np'));
+    np.seek.addEventListener('keydown', () => this.beginSeek('np'));
+    np.seek.addEventListener('pointerup', () => this.endSeek());
+    np.seek.addEventListener('change', () => this.endSeek());
+    np.seek.addEventListener('blur', () => this.endSeek());
+
+    np.seek.addEventListener('input', (event) => {
+      const ratio = Number(event.target.value) / 1000;
+      if (this.isSeeking) {
+        this.updateProgressUI(ratio, this.audio.duration);
+        return;
+      }
+      this.seekToRatio(ratio);
+    });
   }
 
   applyPreferences() {
@@ -609,7 +693,47 @@ export class Player {
       this.el.discLabel.className = 'player-disc-label tone-a';
     }
 
+    this.syncNowPlayingGlow();
+    this.renderNowPlaying();
     this.updateDocumentTitle();
+  }
+
+  /** 读取当前唱片标签的计算色，供全屏页背景光晕使用 */
+  syncNowPlayingGlow() {
+    const np = this.np;
+    if (!this.npAvailable || !this.el.discLabel) return;
+    const color = getComputedStyle(this.el.discLabel).backgroundColor;
+    np.dialog.style.setProperty('--np-glow', color || 'transparent');
+  }
+
+  /** 全屏详情页的文本与唱片标签；进度部分由 updateProgressUI 负责 */
+  renderNowPlaying() {
+    const np = this.np;
+    if (!this.npAvailable) return;
+    const track = this.current;
+
+    if (track) {
+      np.title.textContent = track.title;
+      np.title.title = track.filename || track.title;
+      np.sub.textContent = track.filename || '';
+      const extension = (track.extension || '').toUpperCase();
+      np.meta.textContent = [
+        `上传于 ${formatUploadDate(track.uploadedAt)}`,
+        extension,
+        formatSize(track.size),
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      np.label.textContent = initialOf(track.title);
+      np.label.className = `np-disc-label ${toneFor(track.title)}`;
+    } else {
+      np.title.textContent = '还没有播放任何声音';
+      np.title.title = '';
+      np.sub.textContent = '';
+      np.meta.textContent = '回到卡片列表挑一首，或先上传一段声音。';
+      np.label.textContent = '◦';
+      np.label.className = 'np-disc-label tone-a';
+    }
   }
 
   renderPlayingState() {
@@ -617,6 +741,15 @@ export class Player {
     this.el.player.classList.toggle('is-playing', playing);
     this.el.playMain.setAttribute('aria-label', playing ? '暂停' : '播放');
     this.el.playIcon.setAttribute('href', playing ? '#i-pause' : '#i-play');
+
+    if (this.npAvailable) {
+      // 大唱片旋转由 .now-playing.is-playing 控制，暂停停在原角度
+      this.np.dialog.classList.toggle('is-playing', playing);
+      this.np.playIcon.setAttribute('href', playing ? '#i-pause' : '#i-play');
+      this.np.play.setAttribute('aria-label', playing ? '暂停' : '播放');
+    }
+
+    this.renderNowPlaying();
     this.updateDocumentTitle();
 
     if (this._ready) this.onChange();
@@ -627,18 +760,27 @@ export class Player {
     const current = Number.isFinite(this.audio.currentTime) ? this.audio.currentTime : 0;
     const ratio = duration > 0 ? clamp(current / duration, 0, 1) : 0;
     this.updateProgressUI(ratio, duration);
+    this.renderNowPlaying();
   }
 
   updateProgressUI(ratio, duration) {
     const cleanRatio = clamp(Number(ratio) || 0, 0, 1);
-    // 拖动过程中不回写 seek.value，否则会和用户的手指互相拉扯
-    if (!this.isSeeking) {
-      this.el.seek.value = String(Math.round(cleanRatio * 1000));
+    this.applySeekUI(this.el.seek, this.el.timeCurrent, this.el.timeTotal, cleanRatio, duration);
+    if (this.npAvailable) {
+      this.applySeekUI(this.np.seek, this.np.timeCurrent, this.np.timeTotal, cleanRatio, duration);
     }
-    this.el.seek.style.setProperty('--seek', `${(cleanRatio * 100).toFixed(2)}%`);
-    this.el.timeCurrent.textContent = formatTime(cleanRatio * (Number(duration) || 0));
-    this.el.timeTotal.textContent = formatTime(duration);
-    this.el.seek.disabled = !this.current || !(Number(duration) > 0);
+  }
+
+  /** 单条进度 UI：拖动过程中不回写 seek.value，否则会和用户的手指互相拉扯 */
+  applySeekUI(seekEl, currentEl, totalEl, ratio, duration) {
+    if (!seekEl) return;
+    if (!this.isSeeking) {
+      seekEl.value = String(Math.round(ratio * 1000));
+    }
+    seekEl.style.setProperty('--seek', `${(ratio * 100).toFixed(2)}%`);
+    if (currentEl) currentEl.textContent = formatTime(ratio * (Number(duration) || 0));
+    if (totalEl) totalEl.textContent = formatTime(duration);
+    seekEl.disabled = !this.current || !(Number(duration) > 0);
   }
 
   renderMode() {
